@@ -15,6 +15,7 @@ function App() {
   const [account, setAccount] = useState();
   const [signer, setSigner] = useState();
 
+  
   useEffect(() => {
     async function getAccounts() {
       const accounts = await provider.send('eth_requestAccounts', []);
@@ -26,12 +27,30 @@ function App() {
     getAccounts();
   }, [account]);
 
+  useEffect(()=>{
+    console.log('provider ',provider)
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", () => {
+        console.log('account changed ')
+        getAccounts();
+      });
+    }
+    async function getAccounts() {
+      const accounts = await provider.send('eth_requestAccounts', []);
+
+      setAccount(accounts[0]);
+      const signer1 = await provider.getSigner();
+      console.log('signer1 ',signer1);
+      setSigner(signer1);
+    }
+  },[])
+  
   async function newContract() {
     const beneficiary = document.getElementById('beneficiary').value;
     const arbiter = document.getElementById('arbiter').value;
-    const value = ethers.BigNumber.from(document.getElementById('wei').value);
+    const value = ethers.utils.parseEther(document.getElementById('amount').value)
     const escrowContract = await deploy(signer, arbiter, beneficiary, value);
-
+    console.log('contract ',escrowContract);
 
     const escrow = {
       address: escrowContract.address,
@@ -54,22 +73,22 @@ function App() {
   }
 
   return (
-    <>
+    <main className=''>
       <div className="contract">
         <h1> New Contract </h1>
         <label>
           Arbiter Address
-          <input type="text" id="arbiter" />
+          <input type="text" id="arbiter" defaultValue={"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"}/>
         </label>
 
         <label>
           Beneficiary Address
-          <input type="text" id="beneficiary" />
+          <input type="text" id="beneficiary" defaultValue={"0x70997970C51812dc3A010C7d01b50e0d17dc79C8"}/>
         </label>
 
         <label>
-          Deposit Amount (in Wei)
-          <input type="text" id="wei" />
+          Deposit Amount (in Ether)
+          <input type="text" id="amount" />
         </label>
 
         <div
@@ -90,11 +109,11 @@ function App() {
 
         <div id="container">
           {escrows.map((escrow) => {
-            return <Escrow key={escrow.address} {...escrow} />;
+            return <Escrow key={escrow.address} {...escrow} loggedInUserAddress={account}/>;
           })}
         </div>
       </div>
-    </>
+    </main>
   );
 }
 

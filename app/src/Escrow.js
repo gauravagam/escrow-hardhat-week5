@@ -1,9 +1,12 @@
+import { ethers } from 'ethers';
+
 export default function Escrow({
   address,
   arbiter,
   beneficiary,
   value,
   handleApprove,
+  loggedInUserAddress
 }) {
   return (
     <div className="existing-contract">
@@ -18,9 +21,9 @@ export default function Escrow({
         </li>
         <li>
           <div> Value </div>
-          <div> {value} </div>
+          <div> {value ? ethers.utils.formatUnits(value,"ether") : 0} Ether  </div>
         </li>
-        <div
+        { loggedInUserAddress === arbiter.toLowerCase() ? <><div
           className="button"
           id={address}
           onClick={(e) => {
@@ -31,6 +34,7 @@ export default function Escrow({
         >
           Approve
         </div>
+        <div className='button' onClick={(e)=>{e.preventDefault();console.log('cancel');}}>Cancel</div></> : null}
       </ul>
     </div>
   );
