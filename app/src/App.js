@@ -10,6 +10,11 @@ export async function approve(escrowContract, signer) {
   await approveTxn.wait();
 }
 
+async function cancel(escrowContract, signer){
+  const cancelTx = await escrowContract.connect(signer).cancel();
+  await cancelTx.wait();
+}
+
 function App() {
   const [escrows, setEscrows] = useState([]);
   const [account, setAccount] = useState();
@@ -59,14 +64,21 @@ function App() {
       value: value.toString(),
       handleApprove: async () => {
         escrowContract.on('Approved', () => {
-          document.getElementById(escrowContract.address).className =
+          document.getElementById(`${escrowContract.address}_approve`).className =
             'complete';
-          document.getElementById(escrowContract.address).innerText =
+          document.getElementById(`${escrowContract.address}_approve`).innerText =
             "✓ It's been approved!";
         });
 
         await approve(escrowContract, signer);
+
       },
+      handleCancel: async ()=>{
+        escrowContract.on('Cancel',()=>{
+          console.log('tx cancelled');
+        });
+        await cancel(escrowContract, signer);
+      }
     };
 
     setEscrows([...escrows, escrow]);

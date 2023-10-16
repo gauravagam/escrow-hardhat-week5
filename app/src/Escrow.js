@@ -6,7 +6,8 @@ export default function Escrow({
   beneficiary,
   value,
   handleApprove,
-  loggedInUserAddress
+  loggedInUserAddress,
+  handleCancel
 }) {
   return (
     <div className="existing-contract">
@@ -25,16 +26,21 @@ export default function Escrow({
         </li>
         { loggedInUserAddress === arbiter.toLowerCase() ? <><div
           className="button"
-          id={address}
+          id={`${address}_approve`}
           onClick={(e) => {
             e.preventDefault();
-
             handleApprove();
           }}
         >
           Approve
         </div>
-        <div className='button' onClick={(e)=>{e.preventDefault();console.log('cancel');}}>Cancel</div></> : null}
+          <div className='button'
+            id={`${address}_cancel`}
+            onClick={(e) => {
+              e.preventDefault();
+              handleCancel();
+            }}>Cancel</div></> 
+          : null}
       </ul>
     </div>
   );

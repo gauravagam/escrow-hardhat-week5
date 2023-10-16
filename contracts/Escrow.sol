@@ -24,4 +24,22 @@ contract Escrow {
 		emit Approved(balance);
 		isApproved = true;
 	}
+
+	fallback() external payable{
+
+	}
+
+	receive() external payable{
+
+	}
+
+	event Cancel(uint);
+
+	function cancel() external {
+		require(msg.sender==arbiter);
+		uint balance = address(this).balance;
+		(bool sent, ) = payable(depositor).call{value: balance}("");
+		require(sent,"Failed to send ether to depositor");
+		emit Cancel(balance);
+	}
 }
