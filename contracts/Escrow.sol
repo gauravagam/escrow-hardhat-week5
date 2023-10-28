@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
+import "hardhat/console.sol";
 
 contract Escrow {
 	address public arbiter;
 	address public beneficiary;
 	address public depositor;
+	uint public value;
 
 	bool public isApproved;
 
@@ -12,6 +14,7 @@ contract Escrow {
 		arbiter = _arbiter;
 		beneficiary = _beneficiary;
 		depositor = msg.sender;
+		value = msg.value;
 	}
 
 	event Approved(uint);
@@ -38,7 +41,10 @@ contract Escrow {
 	function cancel() external {
 		require(msg.sender==arbiter);
 		uint balance = address(this).balance;
-		(bool sent, ) = payable(depositor).call{value: balance}("");
+		console.log('balance',balance);
+		(bool sent,bytes memory data) = payable(depositor).call{value: balance}("");
+		console.log('sent',sent);
+		console.logBytes(data);
 		require(sent,"Failed to send ether to depositor");
 		emit Cancel(balance);
 	}
