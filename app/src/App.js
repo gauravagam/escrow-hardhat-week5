@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { useEffect, useState } from 'react';
 import deploy from './deploy';
-import Escrow from './Escrow';
+import History from './History';
 
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
@@ -48,41 +48,70 @@ function App() {
       console.log('signer1 ',signer1);
       setSigner(signer1);
     }
+    getAllContractList();
   },[])
   
   async function newContract() {
-    const beneficiary = document.getElementById('beneficiary').value;
-    const arbiter = document.getElementById('arbiter').value;
-    const value = ethers.utils.parseEther(document.getElementById('amount').value)
-    const escrowContract = await deploy(signer, arbiter, beneficiary, value);
-    console.log('contract ',escrowContract);
-
-    const escrow = {
-      address: escrowContract.address,
-      arbiter,
-      beneficiary,
-      value: value.toString(),
-      handleApprove: async () => {
-        escrowContract.on('Approved', () => {
-          document.getElementById(`${escrowContract.address}_approve`).className =
-            'complete';
-          document.getElementById(`${escrowContract.address}_approve`).innerText =
-            "✓ It's been approved!";
-        });
-
-        await approve(escrowContract, signer);
-
-      },
-      handleCancel: async ()=>{
-        escrowContract.on('Cancel',()=>{
-          console.log('tx cancelled');
-        });
-        await cancel(escrowContract, signer);
+    try {
+      const beneficiary = document.getElementById('beneficiary').value;
+      const arbiter = document.getElementById('arbiter').value;
+      const value = ethers.utils.parseEther(document.getElementById('amount').value)
+      const escrowContract = await deploy(signer, arbiter, beneficiary, value);
+      console.log('contract ',escrowContract);
+  
+      const escrow = {
+        address: escrowContract.address,
+        arbiter,
+        beneficiary,
+        value: value.toString()
+      };
+      const apiResp = await fetch("http://localhost:8080/saveEscrowContract",{ 
+        method: "post", 
+        body: JSON.stringify({contractDetailObj:escrow}), 
+        headers: {"Content-Type":"application/json" }
+      });
+      if(apiResp.status === 200){
+        escrow = {
+          ...escrow,
+          handleApprove: async () => {
+            escrowContract.on('Approved', () => {
+              document.getElementById(`${escrowContract.address}_approve`).className =
+                'complete';
+              document.getElementById(`${escrowContract.address}_approve`).innerText =
+                "✓ It's been approved!";
+            });
+    
+            await approve(escrowContract, signer);
+    
+          },
+          handleCancel: async ()=>{
+            escrowContract.on('Cancel',()=>{
+              console.log('tx cancelled');
+            });
+            await cancel(escrowContract, signer);
+          }
+        };
+        setEscrows([...escrows, escrow]);
+      } else {
+        window.alert("Contract could not be saved");
       }
-    };
-
-    setEscrows([...escrows, escrow]);
+    } catch (error) {
+      window.alert(error.message);
+    }
   }
+
+  const getAllContractList = async () =>{
+    const contractListApiResp = await fetch("http://localhost:8080/getEscrowContracts", {method:"get"});
+    const data = await contractListApiResp.json();
+    const escrowsList = data.contractList.map((contractDetailObj)=>{
+        return {
+            ...contractDetailObj,
+            handleApprove: ()=>{},
+            handleCancel: ()=>{}
+        }
+    })
+    setEscrows(escrowsList);
+}
 
   return (
     <main className=''>
@@ -119,11 +148,7 @@ function App() {
       <div className="existing-contracts">
         <h1> Existing Contracts </h1>
 
-        <div id="container">
-          {escrows.map((escrow) => {
-            return <Escrow key={escrow.address} {...escrow} loggedInUserAddress={account}/>;
-          })}
-        </div>
+        <History escrows={escrows} loggedInUserAddress={account}/>
       </div>
     </main>
   );
