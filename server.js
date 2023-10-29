@@ -19,7 +19,6 @@ app.get("/getEscrowContracts",async(req,res)=>{
 
 app.post("/saveEscrowContract",async(req,res)=>{
     try {
-        console.log('req.body',req.body,req.headers)
         const { contractDetailObj } = req.body;
         if(!contractDetailObj){
             return res.status(400).json({ message: "Parameter is missing."});
