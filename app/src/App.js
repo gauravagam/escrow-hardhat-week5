@@ -2,12 +2,15 @@ import { ethers } from 'ethers';
 import { useEffect, useState } from 'react';
 import deploy from './deploy';
 import History from './History';
+import Escrow from './artifacts/contracts/Escrow.sol/Escrow';
+console.log('abi ',Escrow)
 
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
 export async function approve(escrowContract, signer) {
   const approveTxn = await escrowContract.connect(signer).approve();
-  await approveTxn.wait();
+  const tx = await approveTxn.wait();
+  console.log('tx ',tx);
 }
 
 async function cancel(escrowContract, signer){
@@ -59,7 +62,7 @@ function App() {
       const escrowContract = await deploy(signer, arbiter, beneficiary, value);
       console.log('contract ',escrowContract);
   
-      const escrow = {
+      let escrow = {
         address: escrowContract.address,
         arbiter,
         beneficiary,
@@ -79,6 +82,7 @@ function App() {
                 'complete';
               document.getElementById(`${escrowContract.address}_approve`).innerText =
                 "✓ It's been approved!";
+                document.getElementById(`${escrowContract.address}_cancel`).style = 'display:none';
             });
     
             await approve(escrowContract, signer);
@@ -107,7 +111,16 @@ function App() {
         return {
             ...contractDetailObj,
             handleApprove: ()=>{},
-            handleCancel: ()=>{}
+            handleCancel: async ()=>{
+              console.log('signer ',signer);
+              const escrowContract = new ethers.Contract(contractDetailObj.address,Escrow.abi,signer);
+              console.log('escrowContract ',escrowContract);
+              escrowContract.on('Cancel',()=>{
+                console.log('tx cancelled');
+                document.getElementById(`${escrowContract.address}_cancel`).innerText = "X It's been cancelled!";
+              });
+              await cancel(escrowContract, signer);
+            }
         }
     })
     setEscrows(escrowsList);
