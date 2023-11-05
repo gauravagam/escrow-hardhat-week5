@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import deploy from './deploy';
 import History from './History';
 import Escrow from './artifacts/contracts/Escrow.sol/Escrow';
-console.log('abi ',Escrow)
 
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
@@ -107,13 +106,30 @@ function App() {
   const getAllContractList = async () =>{
     const contractListApiResp = await fetch("http://localhost:8080/getEscrowContracts", {method:"get"});
     const data = await contractListApiResp.json();
-    const escrowsList = data.contractList.map((contractDetailObj)=>{
+    console.log('data',data)
+    let escrowsList = await Promise.allSettled(data?.contractList?.map(async(contractDetailObj)=>{
+      const escrowContract = new ethers.Contract(contractDetailObj.address,Escrow.abi,signer);
+      console.log('escrowContract ',escrowContract);
+      const isApproved = await escrowContract.isApproved();
+
         return {
             ...contractDetailObj,
-            handleApprove: ()=>{},
+            isApproved,
+            handleApprove: async () => {
+              escrowContract.on('Approved', () => {
+                document.getElementById(`${escrowContract.address}_approve`).className =
+                  'complete';
+                document.getElementById(`${escrowContract.address}_approve`).innerText =
+                  "✓ It's been approved!";
+                  document.getElementById(`${escrowContract.address}_cancel`).style = 'display:none';
+                  console.log('data arr',data);
+              });
+      
+              await approve(escrowContract, signer);
+      
+            },
             handleCancel: async ()=>{
               console.log('signer ',signer);
-              const escrowContract = new ethers.Contract(contractDetailObj.address,Escrow.abi,signer);
               console.log('escrowContract ',escrowContract);
               escrowContract.on('Cancel',()=>{
                 console.log('tx cancelled');
@@ -122,7 +138,9 @@ function App() {
               await cancel(escrowContract, signer);
             }
         }
-    })
+    }))
+    // escrowsList = escrowsList.map(promiseObj=>promiseObj.value)
+    console.log('escrowsList ',escrowsList)
     setEscrows(escrowsList);
 }
 
