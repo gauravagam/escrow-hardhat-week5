@@ -44,7 +44,7 @@ app.post("/updateContract",async(req,res)=>{
             contractObj["isCancelled"] = true;
         }
         escrowContractList?.splice(contractObjIndex,1,contractObj);
-        res.status(200).json({ contractList: escrowContractList });
+        res.status(200).json({ updatedContract: contractObj });
     } catch (error) {
         console.error('inside /updateContract ',error);
         res.status(500).json({message:"something went wrong"});
