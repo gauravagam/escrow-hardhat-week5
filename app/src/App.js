@@ -9,7 +9,6 @@ const provider = new ethers.providers.Web3Provider(window.ethereum);
 export async function approve(escrowContract, signer) {
   const approveTxn = await escrowContract.connect(signer).approve();
   const tx = await approveTxn.wait();
-  console.log('tx ',tx);
 }
 
 async function cancel(escrowContract, signer){
@@ -19,8 +18,8 @@ async function cancel(escrowContract, signer){
 
 function App() {
   const [escrows, setEscrows] = useState([]);
-  const [account, setAccount] = useState();
-  const [signer, setSigner] = useState();
+  const [account, setAccount] = useState("");
+  const [signer, setSigner] = useState(null);
 
   
   useEffect(() => {
@@ -28,17 +27,17 @@ function App() {
       const accounts = await provider.send('eth_requestAccounts', []);
 
       setAccount(accounts[0]);
-      setSigner(provider.getSigner());
+      const signer = await provider.getSigner();
+      setSigner(signer);
+      await getAllContractList(signer);
     }
 
     getAccounts();
   }, [account]);
 
   useEffect(()=>{
-    console.log('provider ',provider)
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", () => {
-        console.log('account changed ')
         getAccounts();
       });
     }
@@ -47,10 +46,9 @@ function App() {
 
       setAccount(accounts[0]);
       const signer1 = await provider.getSigner();
-      console.log('signer1 ',signer1);
       setSigner(signer1);
+      await getAllContractList(signer1);
     }
-    getAllContractList();
   },[])
   
   async function newContract() {
@@ -59,7 +57,6 @@ function App() {
       const arbiter = document.getElementById('arbiter').value;
       const value = ethers.utils.parseEther(document.getElementById('amount').value)
       const escrowContract = await deploy(signer, arbiter, beneficiary, value);
-      console.log('contract ',escrowContract);
   
       let escrow = {
         address: escrowContract.address,
@@ -76,20 +73,21 @@ function App() {
         escrow = {
           ...escrow,
           handleApprove: async () => {
-            escrowContract.on('Approved', () => {
+            escrowContract.on('Approved', async() => {
               document.getElementById(`${escrowContract.address}_approve`).className =
                 'complete';
               document.getElementById(`${escrowContract.address}_approve`).innerText =
                 "✓ It's been approved!";
                 document.getElementById(`${escrowContract.address}_cancel`).style = 'display:none';
+                await updateContract(escrowContract.address,true);
             });
     
             await approve(escrowContract, signer);
     
           },
           handleCancel: async ()=>{
-            escrowContract.on('Cancel',()=>{
-              console.log('tx cancelled');
+            escrowContract.on('Cancel',async()=>{
+              await updateContract(escrowContract.address,false,true);
             });
             await cancel(escrowContract, signer);
           }
@@ -103,46 +101,59 @@ function App() {
     }
   }
 
-  const getAllContractList = async () =>{
+  const getAllContractList = async (signerParam) =>{
     const contractListApiResp = await fetch("http://localhost:8080/getEscrowContracts", {method:"get"});
     const data = await contractListApiResp.json();
-    console.log('data',data)
     let escrowsList = await Promise.allSettled(data?.contractList?.map(async(contractDetailObj)=>{
-      const escrowContract = new ethers.Contract(contractDetailObj.address,Escrow.abi,signer);
-      console.log('escrowContract ',escrowContract);
-      const isApproved = await escrowContract.isApproved();
+      const escrowContract = new ethers.Contract(contractDetailObj.address,Escrow.abi,signerParam);
+      // const isApproved = await escrowContract.isApproved();
+      // console.log('isApproved',isApproved)
 
         return {
             ...contractDetailObj,
-            isApproved,
+            // isApproved,
             handleApprove: async () => {
-              escrowContract.on('Approved', () => {
+              escrowContract.on('Approved', async () => {
                 document.getElementById(`${escrowContract.address}_approve`).className =
                   'complete';
                 document.getElementById(`${escrowContract.address}_approve`).innerText =
                   "✓ It's been approved!";
                   document.getElementById(`${escrowContract.address}_cancel`).style = 'display:none';
-                  console.log('data arr',data);
+                  await updateContract(escrowContract.address,true);
               });
-      
+              console.log('before approve ',signer)
               await approve(escrowContract, signer);
       
             },
             handleCancel: async ()=>{
-              console.log('signer ',signer);
-              console.log('escrowContract ',escrowContract);
-              escrowContract.on('Cancel',()=>{
-                console.log('tx cancelled');
+              escrowContract.on('Cancel',async()=>{
                 document.getElementById(`${escrowContract.address}_cancel`).innerText = "X It's been cancelled!";
+                await updateContract(escrowContract.address,false,true);
               });
               await cancel(escrowContract, signer);
             }
         }
     }))
-    // escrowsList = escrowsList.map(promiseObj=>promiseObj.value)
-    console.log('escrowsList ',escrowsList)
+    escrowsList = escrowsList.map(promiseObj=>promiseObj.value)
     setEscrows(escrowsList);
-}
+  }
+
+  const updateContract = async (contractAddress,isApproved,isCancelled=false)=>{
+    const apiResp = await fetch("http://localhost:8080/updateContract",{ 
+        method: "post", 
+        body: JSON.stringify({ contractAddress, isApproved, isCancelled }), 
+        headers: {"Content-Type":"application/json" }
+      });
+      if(apiResp.status===200){
+        const apiRespJson = await apiResp.json();
+        const escrowsList = [...escrows];
+        const contractObjIndex = escrowsList?.findIndex(contractObj=>contractObj.address===contractAddress);
+        escrowsList[contractObjIndex] = apiRespJson.updatedContract;
+        setEscrows(escrowsList);
+      } else {
+        window.alert('contract data could not updated');
+      }
+  }
 
   return (
     <main className=''>

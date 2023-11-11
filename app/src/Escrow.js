@@ -7,7 +7,9 @@ export default function Escrow({
   value,
   handleApprove,
   loggedInUserAddress,
-  handleCancel
+  handleCancel,
+  isApproved,
+  isCancelled
 }) {
   return (
     <div className="existing-contract">
@@ -24,7 +26,7 @@ export default function Escrow({
           <div> Value </div>
           <div> {value ? ethers.utils.formatUnits(value,"ether") : 0} Ether  </div>
         </li>
-        { loggedInUserAddress === arbiter.toLowerCase() ? <><div
+        { loggedInUserAddress === arbiter?.toLowerCase() && (!isApproved || isCancelled) ? <><div
           className="button"
           id={`${address}_approve`}
           onClick={(e) => {
