@@ -32,6 +32,24 @@ app.post("/saveEscrowContract",async(req,res)=>{
     }
 })
 
+app.post("/updateContract",async(req,res)=>{
+    try {
+        const { contractAddress } = req.body;
+        const contractObjIndex = escrowContractList.findIndex(contractObj=>contractObj.address===contractAddress);
+        const contractObj = contractObjIndex>=0 ? escrowContractList[contractObjIndex] : {} ;
+        if(req.body.isApproved){
+            contractObj["isApproved"] = true;
+        }
+        if(req.body.isCancelled){
+            contractObj["isCancelled"] = true;
+        }
+        escrowContractList?.splice(contractObjIndex,1,contractObj);
+        res.status(200).json({ contractList: escrowContractList });
+    } catch (error) {
+        console.error('inside /updateContract ',error);
+        res.status(500).json({message:"something went wrong"});
+    }
+})
 app.listen(PORT,()=>{
     console.log('server is listening on ',PORT);
 })
