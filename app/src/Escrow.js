@@ -26,7 +26,11 @@ export default function Escrow({
           <div> Value </div>
           <div> {value ? ethers.utils.formatUnits(value,"ether") : 0} Ether  </div>
         </li>
-        { loggedInUserAddress === arbiter?.toLowerCase() && (!isApproved || isCancelled) ? <><div
+        {(isApproved || isCancelled) ?  <li>
+          <div>Status</div>
+          <div>{isApproved && "Approved"} {isCancelled && "Cancelled"}</div>
+        </li> : null}
+        { loggedInUserAddress === arbiter?.toLowerCase() && ((!isApproved || isCancelled) && (isApproved || !isCancelled)) ? <><div
           className="button"
           id={`${address}_approve`}
           onClick={(e) => {

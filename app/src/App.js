@@ -8,7 +8,7 @@ const provider = new ethers.providers.Web3Provider(window.ethereum);
 
 export async function approve(escrowContract, signer) {
   const approveTxn = await escrowContract.connect(signer).approve();
-  const tx = await approveTxn.wait();
+  await approveTxn.wait();
 }
 
 async function cancel(escrowContract, signer){
@@ -106,12 +106,9 @@ function App() {
     const data = await contractListApiResp.json();
     let escrowsList = await Promise.allSettled(data?.contractList?.map(async(contractDetailObj)=>{
       const escrowContract = new ethers.Contract(contractDetailObj.address,Escrow.abi,signerParam);
-      // const isApproved = await escrowContract.isApproved();
-      // console.log('isApproved',isApproved)
 
         return {
             ...contractDetailObj,
-            // isApproved,
             handleApprove: async () => {
               escrowContract.on('Approved', async () => {
                 document.getElementById(`${escrowContract.address}_approve`).className =
@@ -121,12 +118,12 @@ function App() {
                   document.getElementById(`${escrowContract.address}_cancel`).style = 'display:none';
                   await updateContract(escrowContract.address,true);
               });
-              console.log('before approve ',signer)
               await approve(escrowContract, signer);
       
             },
             handleCancel: async ()=>{
               escrowContract.on('Cancel',async()=>{
+                document.getElementById(`${escrowContract.address}_approve`).className = 'cancel';
                 document.getElementById(`${escrowContract.address}_cancel`).innerText = "X It's been cancelled!";
                 await updateContract(escrowContract.address,false,true);
               });
@@ -156,22 +153,22 @@ function App() {
   }
 
   return (
-    <main className=''>
-      <div className="contract">
+    <main className='flex flex-wrap w-full'>
+      <div className="contract flex-1">
         <h1> New Contract </h1>
         <label>
           Arbiter Address
-          <input type="text" id="arbiter" defaultValue={"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"}/>
+          <input type="text" id="arbiter" defaultValue={"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"} className="form-input"/>
         </label>
 
         <label>
           Beneficiary Address
-          <input type="text" id="beneficiary" defaultValue={"0x70997970C51812dc3A010C7d01b50e0d17dc79C8"}/>
+          <input type="text" id="beneficiary" defaultValue={"0x70997970C51812dc3A010C7d01b50e0d17dc79C8"} className="form-input"/>
         </label>
 
         <label>
           Deposit Amount (in Ether)
-          <input type="text" id="amount" />
+          <input type="text" id="amount" className='form-input'/>
         </label>
 
         <div
@@ -187,7 +184,7 @@ function App() {
         </div>
       </div>
 
-      <div className="existing-contracts">
+      <div className="existing-contracts flex-1">
         <h1> Existing Contracts </h1>
 
         <History escrows={escrows} loggedInUserAddress={account}/>
