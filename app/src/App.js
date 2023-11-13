@@ -20,7 +20,9 @@ function App() {
   const [escrows, setEscrows] = useState([]);
   const [account, setAccount] = useState("");
   const [signer, setSigner] = useState(null);
-
+  const [arbiter,setArbiter] = useState("");
+  const [beneficiary,setBeneficiary] = useState("");
+  const [amount,setAmount] = useState("");
   
   useEffect(() => {
     async function getAccounts() {
@@ -53,16 +55,15 @@ function App() {
   
   async function newContract() {
     try {
-      const beneficiary = document.getElementById('beneficiary').value;
-      const arbiter = document.getElementById('arbiter').value;
-      const value = ethers.utils.parseEther(document.getElementById('amount').value)
+      const value = ethers.utils.parseEther(amount)
       const escrowContract = await deploy(signer, arbiter, beneficiary, value);
-  
+      window.alert('Contract has been deployed');
       let escrow = {
         address: escrowContract.address,
         arbiter,
         beneficiary,
-        value: value.toString()
+        value: value.toString(),
+        depositor: account
       };
       const apiResp = await fetch("http://localhost:8080/saveEscrowContract",{ 
         method: "post", 
@@ -70,15 +71,13 @@ function App() {
         headers: {"Content-Type":"application/json" }
       });
       if(apiResp.status === 200){
+        setArbiter("");
+        setBeneficiary("");
+        setAmount("");
         escrow = {
           ...escrow,
           handleApprove: async () => {
             escrowContract.on('Approved', async() => {
-              document.getElementById(`${escrowContract.address}_approve`).className =
-                'complete';
-              document.getElementById(`${escrowContract.address}_approve`).innerText =
-                "✓ It's been approved!";
-                document.getElementById(`${escrowContract.address}_cancel`).style = 'display:none';
                 await updateContract(escrowContract.address,true);
             });
     
@@ -111,11 +110,6 @@ function App() {
             ...contractDetailObj,
             handleApprove: async () => {
               escrowContract.on('Approved', async () => {
-                document.getElementById(`${escrowContract.address}_approve`).className =
-                  'complete';
-                document.getElementById(`${escrowContract.address}_approve`).innerText =
-                  "✓ It's been approved!";
-                  document.getElementById(`${escrowContract.address}_cancel`).style = 'display:none';
                   await updateContract(escrowContract.address,true);
               });
               await approve(escrowContract, signer);
@@ -123,8 +117,6 @@ function App() {
             },
             handleCancel: async ()=>{
               escrowContract.on('Cancel',async()=>{
-                document.getElementById(`${escrowContract.address}_approve`).className = 'cancel';
-                document.getElementById(`${escrowContract.address}_cancel`).innerText = "X It's been cancelled!";
                 await updateContract(escrowContract.address,false,true);
               });
               await cancel(escrowContract, signer);
@@ -153,26 +145,36 @@ function App() {
   }
 
   return (
-    <main className='flex flex-wrap w-full'>
-      <div className="contract flex-1">
-        <h1> New Contract </h1>
+    <main className='flex flex-col w-full'>
+      <h1 className='text-center'>Simple Escrow Contract</h1>
+      <div className="contract flex-1 w-9/12 max-w-screen-md mx-auto rounded-md">
+        <h2> New Contract </h2>
         <label>
           Arbiter Address
-          <input type="text" id="arbiter" defaultValue={"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"} className="form-input"/>
+          <input type="text" id="arbiter" 
+            className="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+            onChange={e=>setArbiter(e.target.value)}
+            value={arbiter}/>
         </label>
 
         <label>
           Beneficiary Address
-          <input type="text" id="beneficiary" defaultValue={"0x70997970C51812dc3A010C7d01b50e0d17dc79C8"} className="form-input"/>
+          <input type="text" id="beneficiary" 
+            className="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+            onChange={e=>setBeneficiary(e.target.value)}
+            value={beneficiary}/>
         </label>
 
         <label>
           Deposit Amount (in Ether)
-          <input type="text" id="amount" className='form-input'/>
+          <input type="text" id="amount" 
+            className="border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+            onChange={e=>setAmount(e.target.value)}
+            value={amount}/>
         </label>
 
         <div
-          className="button"
+          className="button rounded-md"
           id="deploy"
           onClick={(e) => {
             e.preventDefault();
@@ -184,9 +186,8 @@ function App() {
         </div>
       </div>
 
-      <div className="existing-contracts flex-1">
-        <h1> Existing Contracts </h1>
-
+      <div className="existing-contracts flex-1 w-9/12 max-w-screen-md mx-auto rounded-md">
+        <h2> Existing Contracts </h2>
         <History escrows={escrows} loggedInUserAddress={account}/>
       </div>
     </main>

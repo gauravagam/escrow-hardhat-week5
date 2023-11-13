@@ -12,13 +12,14 @@ body {
 }
 
 .contract, .existing-contracts {
-  margin: 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
   padding: 20px;
   border: 1px solid #ddd;
   background-color: #fff;
 }
 
-h1 {
+h1, h2 {
   margin: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
