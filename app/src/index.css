@@ -1,20 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
   background-color: #eee;
   display: flex;
-  font-family: 'Muli', sans-serif;
+}
+
+#root{
+  @apply w-full
 }
 
 .contract, .existing-contracts {
-  margin: 20px;
-  display: inline-block;
-  padding: 40px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding: 20px;
   border: 1px solid #ddd;
   background-color: #fff;
 }
 
-h1 {
+h1, h2 {
   margin: 10px;
-  padding: 10px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #eee;
 }
 
@@ -62,9 +69,4 @@ input[type="text"] {
 
 .existing-contract ul > li > :first-child {
   font-weight: bold;
-}
-
-.existing-contract .complete {
-  color: #5aa75a;
-  text-align: center;
 }
