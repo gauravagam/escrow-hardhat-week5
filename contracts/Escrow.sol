@@ -41,10 +41,7 @@ contract Escrow {
 	function cancel() external {
 		require(msg.sender==arbiter);
 		uint balance = address(this).balance;
-		console.log('balance',balance);
-		(bool sent,bytes memory data) = payable(depositor).call{value: balance}("");
-		console.log('sent',sent);
-		console.logBytes(data);
+		(bool sent,) = payable(depositor).call{value: balance}("");
 		require(sent,"Failed to send ether to depositor");
 		emit Cancel(balance);
 	}

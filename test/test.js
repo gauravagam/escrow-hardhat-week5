@@ -42,4 +42,15 @@ describe('Escrow', function () {
       expect(after.sub(before)).to.eq(deposit);
     });
   });
+
+  describe('after cancel from the arbiter',()=>{
+    it('should transfer balance to depositor',async()=>{
+      const before = await ethers.provider.getBalance(depositor.getAddress());
+      const cancelTxn = await contract.connect(arbiter).cancel();
+      await cancelTxn.wait();
+      const after = await ethers.provider.getBalance(depositor.getAddress());
+      expect(after.sub(before)).to.eq(deposit);
+    })
+  });
+  
 });
