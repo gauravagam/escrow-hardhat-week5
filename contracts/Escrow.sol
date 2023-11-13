@@ -48,8 +48,4 @@ contract Escrow {
 		require(sent,"Failed to send ether to depositor");
 		emit Cancel(balance);
 	}
-
-	function getIsApproved() external view returns(bool){
-		return isApproved;
-	}
 }
