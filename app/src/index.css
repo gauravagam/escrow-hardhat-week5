@@ -70,13 +70,3 @@ input[type="text"] {
 .existing-contract ul > li > :first-child {
   font-weight: bold;
 }
-
-.existing-contract .complete {
-  color: #5aa75a;
-  text-align: center;
-}
-
-.existing-contract .cancel {
-  color: #ef4444;
-  text-align: center;
-}
